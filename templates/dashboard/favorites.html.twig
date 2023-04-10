@@ -48,6 +48,7 @@
                         <th>Order</th>
                         <th>Genus</th>
                         <th>Nutritions</th>
+                        <th>Total Nutrients</th>
                         <th>Action</th>
                     </tr>
                     </thead>
@@ -66,6 +67,7 @@
                                 Calories: {{ fruit.fruit.nutrition.calories }}<br>
                                 Sugar: {{ fruit.fruit.nutrition.sugar }}
                             </td>
+                            <td>{{ fruit.totalNutrients }}</td>
                             <td class="text-center">
                                 {% set favoriteFruitIds = favorites|map(favorite => favorite.fruitId)|filter(fruitId => fruitId is not null) %}
                                 {% if fruit.fruit.fruitId in favoriteFruitIds %}
