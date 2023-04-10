@@ -145,11 +145,11 @@
                 }
             });
 
-            // Inițializați select2 pentru nume și filtru de familie
+            // Select 2
             $('#name-filter').select2({data: allNames, placeholder: "Select name"});
             $('#family-filter').select2({data: allFamilies, placeholder: "Select family"});
 
-            // Funcție de filtrare
+            // Filter
             $('#name-filter, #family-filter').on('change', function () {
                 let nameFilter = $('#name-filter').val();
                 let familyFilter = $('#family-filter').val();
@@ -177,7 +177,7 @@
                 let currentCount = parseInt(favoritesCount.text(), 10);
 
                 $.ajax({
-                    url: '/add-to-favorites', // URL-ul pentru acțiunea în controler care gestionează adăugarea la favorite
+                    url: '/add-to-favorites', // URL action Favorite
                     method: 'POST',
                     data: {
                         user_id: userId,
