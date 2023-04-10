@@ -1,0 +1,149 @@
+{% extends 'base_dashboard.html.twig' %}
+
+{% block title %}Setări Utilizator{% endblock %}
+
+{% block dashboard_content %}
+    <style>
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #28a745;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 1000;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+
+
+    <div id="notification" class="notification hidden">Changes have been successfully saved!</div>
+    <div id="error-notification" class="error-notification hidden">An error occurred!</div>
+
+
+    <div class="container">
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <form id="settings-form" method="post" action="{{ path('app_settings') }}">
+                    <div class="form-group">
+                        <label for="first_name">First Name:</label>
+                        <input type="text" id="first_name" name="first_name" class="form-control"
+                               value="{{ user.firstName }}"/>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="last_name">Last Name:</label>
+                        <input type="text" id="last_name" name="last_name" class="form-control"
+                               value="{{ user.lastName }}"/>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="username">Username:</label>
+                        <input type="text" id="username" name="username" class="form-control"
+                               value="{{ user.username }}"/>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address:</label>
+                        <input type="email" id="email" name="email" class="form-control" value="{{ user.email }}"/>
+                    </div>
+
+                    <div class="form-check">
+                        <input type="checkbox" id="active" name="active" class="form-check-input"
+                               {% if user.active %}checked{% endif %} />
+                        <label for="active" class="form-check-label">Activ</label>
+                    </div>
+
+                    <div class="form-check">
+                        <input type="checkbox" id="notification_alert" name="notification_alert"
+                               class="form-check-input" {% if user.notificationAlert %}checked{% endif %} />
+                        <label for="notification_alert" class="form-check-label">Notification Mail Alert</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    <script>
+        const form = document.querySelector('form');
+        const emailInput = document.getElementById('email');
+        const emailError = document.createElement('div');
+        emailError.style.color = 'red';
+        emailError.textContent = 'Email Address is not Valid.';
+
+        form.addEventListener('submit', (event) => {
+            if (!validateEmail(emailInput.value)) {
+                event.preventDefault();
+                if (!emailInput.nextElementSibling) {
+                    emailInput.insertAdjacentElement('afterend', emailError);
+                }
+            } else {
+                if (emailInput.nextElementSibling === emailError) {
+                    emailInput.nextElementSibling.remove();
+                }
+            }
+        });
+
+        function validateEmail(email) {
+            const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+            return emailRegex.test(email);
+        }
+
+        function showNotification() {
+            const notificationElement = document.getElementById('notification');
+            notificationElement.classList.remove('hidden');
+
+            setTimeout(() => {
+                notificationElement.classList.add('hidden');
+            }, 2000);
+        }
+
+        function showErrorNotification() {
+            errorNotification.classList.remove('hidden');
+            setTimeout(() => {
+                errorNotification.classList.add('hidden');
+            }, 2000);
+        }
+
+        const settingsForm = document.getElementById('settings-form');
+        const errorNotification = document.getElementById('error-notification');
+
+        settingsForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            // Form POST
+            const formData = new FormData(settingsForm);
+            const response = await fetch(settingsForm.action, {
+                method: 'POST',
+                body: formData,
+            });
+
+            // JOSN Succes
+            if (response.ok && response.headers.get('Content-Type') === 'application/json') {
+                const jsonResponse = await response.json();
+
+                if (jsonResponse.success) {
+                    showNotification();
+                } else {
+                    // Error Div
+                    errorNotification.textContent = jsonResponse.error;
+                    showErrorNotification();
+                }
+            } else {
+                // Error Again...
+                errorNotification.textContent = 'An error occurred!';
+                showErrorNotification();
+            }
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,28 @@
+{
+  "entrypoints": {
+    "app": {
+      "js": [
+        "/build/runtime.js",
+        "/build/app.js"
+      ],
+      "css": [
+        "/build/app.css"
+      ]
+    },
+    "dashboard": {
+      "js": [
+        "/build/runtime.js",
+        "/build/dashboard.js"
+      ],
+      "css": [
+        "/build/dashboard.css"
+      ]
+    },
+    "emailValidation": {
+      "js": [
+        "/build/runtime.js",
+        "/build/emailValidation.js"
+      ]
+    }
+  }
+}

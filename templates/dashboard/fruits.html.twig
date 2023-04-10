@@ -1,0 +1,224 @@
+{% extends 'base_dashboard.html.twig' %}
+
+{% block title %}List Fruits{% endblock %}
+
+{% block dashboard_content %}
+
+    <style>
+        .fa-heart {
+            color: #f44336;
+        }
+
+        .fa-heart.far {
+            color: rgba(244, 67, 54, 0.5);
+        }
+    </style>
+
+    <div id="success-alert" class="alert alert-success alert-dismissible fade" role="alert" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 999;">
+        <span class="alert-message">The fruit has been successfully added to favorites.</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div id="warning-alert" class="alert alert-warning alert-dismissible fade" role="alert" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 999;">
+        <span class="alert-message">The fruit has been deleted from favorites.</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div class="container" id="user-container" data-user-id="{{ userId }}">
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <label for="name-filter">
+                    <select id="name-filter" class="form-select" multiple>
+                        {% for fruit in fruits %}
+                            <option value="{{ fruit.name }}">{{ fruit.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label for="family-filter">
+                    <select id="family-filter" class="form-select" multiple>
+                        {% for family in familys %}
+                            <option value="{{ family.name }}">{{ family.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+
+                <table id="fruits-table" class="table table-hover table-bordered">
+                    <thead class="table-primary">
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Family</th>
+                        <th>Order</th>
+                        <th>Genus</th>
+                        <th>Nutritions</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for fruit in fruits %}
+                        <tr>
+                            <td>{{ fruit.fruitId }}</td>
+                            <td>{{ fruit.name }}</td>
+                            <td>{{ fruit.family.name }}</td>
+                            <td>{{ fruit.order.name }}</td>
+                            <td>{{ fruit.genus.name }}</td>
+                            <td>
+                                Carbohydrates: {{ fruit.nutrition.carbohydrates }}<br>
+                                Protein: {{ fruit.nutrition.protein }}<br>
+                                Fat: {{ fruit.nutrition.fat }}<br>
+                                Calories: {{ fruit.nutrition.calories }}<br>
+                                Sugar: {{ fruit.nutrition.sugar }}
+                            </td>
+                            <td class="text-center">
+                                {% set favoriteFruitIds = favorites|map(favorite => favorite.fruitId)|filter(fruitId => fruitId is not null) %}
+                                {% if fruit.fruitId in favoriteFruitIds %}
+                                    <i class="fas fa-heart" data-id="{{ fruit.fruitId }}"></i>
+                                {% else %}
+                                    <i class="far fa-heart" data-id="{{ fruit.fruitId }}"></i>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="favorites-limit-modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Limit reached</h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    You have reached the limit of 10 favorite fruits. You must remove a fruit from the favorites list first
+                    to add others.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        $(document).ready(function () {
+            let table = $('#fruits-table').DataTable({
+                "pageLength": 25,
+                "order": [[0, 'asc']],
+                "columnDefs": [
+                    {
+                        "targets": [6],
+                        "orderable": false
+                    }
+                ],
+                "dom": 'lBfrtip',
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.11.5/i18n/en-GB.json"
+                }
+            });
+
+
+            let allNames = [];
+            let allFamilies = [];
+
+            // Obțineți și eliminați duplicatele pentru nume și familii
+            $('#name-filter option').each(function () {
+                let name = $(this).text();
+
+                if (!allNames.some(e => e.id === name)) {
+                    allNames.push({id: name, text: name});
+                }
+            });
+
+            $('#family-filter option').each(function () {
+                let family = $(this).text();
+
+                if (!allFamilies.some(e => e.id === family)) {
+                    allFamilies.push({id: family, text: family});
+                }
+            });
+
+            // Inițializați select2 pentru nume și filtru de familie
+            $('#name-filter').select2({data: allNames, placeholder: "Select name"});
+            $('#family-filter').select2({data: allFamilies, placeholder: "Select family"});
+
+            // Funcție de filtrare
+            $('#name-filter, #family-filter').on('change', function () {
+                let nameFilter = $('#name-filter').val();
+                let familyFilter = $('#family-filter').val();
+
+                table.column(1).search(nameFilter.length ? '^(' + nameFilter.join('|') + ')$' : '', true, false);
+                table.column(2).search(familyFilter.length ? '^(' + familyFilter.join('|') + ')$' : '', true, false);
+                table.draw();
+            });
+
+            function showAlert(alertElement) {
+                alertElement.show().addClass('show');
+                setTimeout(function () {
+                    alertElement.removeClass('show').hide();
+                }, 2000);
+            }
+
+            $('body').on('click', '.fa-heart', function (event) {
+                event.preventDefault();
+
+                let userId = parseInt($('#user-container').data('user-id'), 10);
+                //console.log(userId);
+                let fruitId = $(this).closest('tr').find('td:eq(0)').text();
+                let heartIcon = $(this);
+                let favoritesCount = $('#favorites-count');
+                let currentCount = parseInt(favoritesCount.text(), 10);
+
+                $.ajax({
+                    url: '/add-to-favorites', // URL-ul pentru acțiunea în controler care gestionează adăugarea la favorite
+                    method: 'POST',
+                    data: {
+                        user_id: userId,
+                        fruit_id: fruitId
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            if (response.action === 'add') {
+                                // If the fruit has been successfully added to favorites, change the heart icon to "fas fa-heart" (full)
+                                heartIcon.removeClass('far fa-heart').addClass('fas fa-heart');
+                                showAlert($('#success-alert'));
+                                currentCount++;
+                            } else if (response.action === 'remove') {
+                                // If the fruit has been successfully removed from favorites, change the heart icon to "far fa-heart" (empty)
+                                heartIcon.removeClass('fas fa-heart').addClass('far fa-heart');
+                                showAlert($('#warning-alert'));
+                                currentCount--;
+                            }
+                            favoritesCount.text(currentCount);
+                        } else {
+                            // Check if the error message is related to the favorites limit
+                            if (response.limitReached) {
+                                // Show the "favorites-limit-modal" modal
+                                $('#favorites-limit-modal').modal('show');
+                            } else {
+                                // Display the error message in the "error-modal" modal
+                                $('#error-modal .modal-body').html(response.message);
+                                $('#error-modal').modal('show');
+                            }
+                        }
+                    }
+                });
+            });
+
+
+
+
+        });
+
+
+
+
+    </script>
+{% endblock %}
